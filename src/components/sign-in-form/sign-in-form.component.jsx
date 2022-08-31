@@ -1,6 +1,6 @@
-import { connectFirestoreEmulator } from "firebase/firestore";
-import { useState } from "react";
-import { signInWithGooglePopup, createUserDocumentFromAuth, signInAuthUserWithEmailAndPassword } from "../../utils/firebase/firebase.utils";
+import { useState, useContext } from "react";
+import { signInWithGooglePopup, signInAuthUserWithEmailAndPassword } from "../../utils/firebase/firebase.utils";
+import { UserContext } from "../../contexts/user.context";
 import FormInput from "../form-input/form-input.component";
 import Button from "../button/button.component";
 import './sign-in-form.styles.scss'
@@ -14,18 +14,25 @@ const SignInForm = () => {
     const [formFields, setFormFields] = useState(defaultFormFields)
     const {email, password} = formFields;
 
+    const { setCurrentUser } = useContext(UserContext)
+
     const resetFormFields = () => {
         setFormFields(defaultFormFields)
     }
+
+    const signInWithGoogle = async () => {
+        const { user } = await signInWithGooglePopup();
+        setCurrentUser(user);
+      };
 
     const handleSubmit = async(event) => {
         event.preventDefault();
         
 
         try {
-           const response = await signInAuthUserWithEmailAndPassword(email, password)
-
+           const {user} = await signInAuthUserWithEmailAndPassword(email, password)
            resetFormFields();
+           setCurrentUser(user);
         } catch (error) {
             switch(error.code) {
                 case 'auth/wrong-password':
@@ -41,11 +48,6 @@ const SignInForm = () => {
         }
     }
 
-    const signInWithGoogle = async () => {
-        const {user} = await signInWithGooglePopup();
-        await createUserDocumentFromAuth(user)
-    }
-    
 
     const handleChange = (event) => {
         const {name, value} = event.target;
@@ -53,10 +55,10 @@ const SignInForm = () => {
     }
 
     return(
-        <div className="sign-up-container">
-            <h2>Do you have account already?</h2>
+        <div className="sign-in-container">
+            <h2>Do you have an account already?</h2>
             <span>Sign-in with your e-mail and password</span>
-            <form onSubmit={() => {}}>
+            <form onSubmit={handleSubmit}>
                 <FormInput label='Email' type='email' required name='email' value={email} onChange={handleChange}/>
                 <FormInput label='Password' type='password' required name='password' value={password} onChange={handleChange}/>
                 <div className="buttons-container">
